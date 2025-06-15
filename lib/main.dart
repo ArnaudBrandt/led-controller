@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 void main() {
+  print('🟡 FUNCTION_URL utilisée : $functionUrl');
   runApp(const MyApp());
 }
 
