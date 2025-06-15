@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 final functionUrl = const String.fromEnvironment('FUNCTION_URL');
 
 void main() {
-  print('🟡 FUNCTION_URL utilisée : $functionUrl');
   runApp(const MyApp());
 }
 
@@ -44,7 +43,7 @@ void main() {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'deviceId': 'esp32-led',
+          'deviceId': 'ESP32_Dev',
           'color': color,
         }),
       );
