@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+final functionUrl = const String.fromEnvironment('FUNCTION_URL');
+
 void main() {
   print('🟡 FUNCTION_URL utilisée : $functionUrl');
   runApp(const MyApp());
@@ -24,7 +26,7 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   // TODO: Remplace cette URL plus tard par ton endpoint Azure
-final functionUrl = const String.fromEnvironment('FUNCTION_URL');
+
 
 void main() {
   if (functionUrl.isEmpty) {
