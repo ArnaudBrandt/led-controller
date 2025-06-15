@@ -1,73 +1,93 @@
-const iothub = require('azure-iothub');
-const { Message } = require('azure-iot-common');
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-module.exports = async function (context, req) {
-  const connectionString = process.env.IOTHUB_CONNECTION_STRING;
-  context.log("🔍 Connexion Azure IoT :", connectionString);
+final functionUrl = const String.fromEnvironment('FUNCTION_URL');
 
-  if (!connectionString || !connectionString.includes("HostName=")) {
-    context.log("❌ Chaîne de connexion manquante ou invalide.");
-    context.res = {
-      status: 500,
-      body: "Chaîne de connexion IOTHUB_CONNECTION_STRING invalide ou absente.",
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      }
-    };
-    return;
+void main() {
+  print('🟡 FUNCTION_URL utilisée : $functionUrl');
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'LED Controller',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  // TODO: Remplace cette URL plus tard par ton endpoint Azure
+
+
+void main() {
+  if (functionUrl.isEmpty) {
+    throw Exception("FUNCTION_URL n'est pas défini. Utilise --dart-define.");
   }
 
-  // ✅ Lecture depuis le body JSON
-  const body = req.body || {};
-  const deviceId = body.deviceId;
-  const color = body.color;
-
-  context.log(`📦 Reçu depuis Flutter : deviceId = ${deviceId}, color = ${color}`);
-
-  if (!deviceId || !color) {
-    context.res = {
-      status: 400,
-      body: "deviceId ou color manquant",
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      }
-    };
-    return;
+  runApp(const MyApp());
+}
+    Future<void> sendColor(String color) async {
+    final url = Uri.parse(functionUrl);
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'deviceId': 'esp32-led',
+          'color': color,
+        }),
+      );
+      print('✅ Response: ${response.statusCode} - ${response.body}');
+    } catch (e) {
+      print('❌ Error: $e');
+    }
   }
 
-  const serviceClient = iothub.Client.fromConnectionString(connectionString);
-  const message = new Message(JSON.stringify({ color }));
-
-  try {
-    await new Promise((resolve, reject) => {
-      serviceClient.open(err => {
-        if (err) return reject(err);
-        serviceClient.send(deviceId, message, err => {
-          if (err) reject(err);
-          else resolve();
-        });
-      });
-    });
-
-    context.res = {
-      status: 200,
-      body: `✅ Couleur ${color} envoyée à ${deviceId}`,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      }
+  @override
+  Widget build(BuildContext context) {
+    final colors = {
+      'red': Colors.red,
+      'green': Colors.green,
+      'blue': Colors.blue,
+      'rainbow': Colors.purple,
+      'off': Colors.grey,
     };
-  } catch (err) {
-    context.log("❌ Erreur lors de l’envoi :", err);
-    context.res = {
-      status: 500,
-      body: "Erreur lors de l'envoi du message.",
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json"
-      }
-    };
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Contrôle LED')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: colors.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: entry.value,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: () => sendColor(entry.key),
+                child: Text(
+                  entry.key.toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
   }
-};
+}
