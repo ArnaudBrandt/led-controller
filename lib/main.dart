@@ -8,10 +8,6 @@ final clientId = const String.fromEnvironment('B2C_CLIENT_ID');
 final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
 
-// update tenant 
-
-String? accessToken;
-
 void main() {
   if (functionUrl.isEmpty) {
     throw Exception("FUNCTION_URL n'est pas défini.");
@@ -26,37 +22,61 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LED Controller',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomePage(),
+      home: const AuthenticatedHomePage(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class AuthenticatedHomePage extends StatefulWidget {
+  const AuthenticatedHomePage({super.key});
 
-  Future<void> authenticateWithMicrosoft() async {
+  @override
+  State<AuthenticatedHomePage> createState() => _AuthenticatedHomePageState();
+}
+
+class _AuthenticatedHomePageState extends State<AuthenticatedHomePage> {
+  String? accessToken;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _authenticateWithMicrosoft();
+  }
+
+  Future<void> _authenticateWithMicrosoft() async {
     final authUrl =
-        'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
+        'https://$tenantName.ciamlogin.com/$tenantName/oauth2/v2.0/authorize'
         '?client_id=$clientId'
         '&response_type=token'
         '&redirect_uri=$redirectUri'
         '&scope=openid'
         '&prompt=login';
 
-    final result = await FlutterWebAuth2.authenticate(
-      url: authUrl,
-      callbackUrlScheme: "https",
-    );
+    try {
+      final result = await FlutterWebAuth2.authenticate(
+        url: authUrl,
+        callbackUrlScheme: "https",
+      );
 
-    accessToken = Uri.parse(result).fragment
-        .split('&')
-        .firstWhere((e) => e.startsWith('access_token='))
-        .split('=')[1];
+      final token = Uri.parse(result).fragment
+          .split('&')
+          .firstWhere((e) => e.startsWith('access_token='))
+          .split('=')[1];
 
-    print("🔐 Token récupéré : $accessToken");
+      setState(() {
+        accessToken = token;
+        isLoading = false;
+      });
+
+      print("🔐 Token récupéré : $accessToken");
+    } catch (e) {
+      print("❌ Auth erreur : $e");
+      // tu pourrais ici afficher une erreur ou rediriger
+    }
   }
 
-  Future<void> sendColor(String color) async {
+  Future<void> _sendColor(String color) async {
     final url = Uri.parse(functionUrl);
     try {
       final headers = {
@@ -79,6 +99,14 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading || accessToken == null) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     final colors = {
       'red': Colors.red,
       'green': Colors.green,
@@ -92,29 +120,22 @@ class HomePage extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          children: [
-            ElevatedButton(
-              onPressed: authenticateWithMicrosoft,
-              child: const Text("Connexion Microsoft"),
-            ),
-            const SizedBox(height: 20),
-            ...colors.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: entry.value,
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  onPressed: () => sendColor(entry.key),
-                  child: Text(
-                    entry.key.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                  ),
+          children: colors.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: entry.value,
+                  minimumSize: const Size(double.infinity, 50),
                 ),
-              );
-            }).toList(),
-          ],
+                onPressed: () => _sendColor(entry.key),
+                child: Text(
+                  entry.key.toUpperCase(),
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
