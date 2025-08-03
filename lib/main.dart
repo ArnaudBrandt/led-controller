@@ -9,6 +9,10 @@ final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
 final policy = const String.fromEnvironment('B2C_POLICY');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
 
+
+// modif avec token corrigé
+
+
 String? accessToken;
 
 void main() {
