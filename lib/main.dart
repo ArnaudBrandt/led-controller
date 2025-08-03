@@ -48,20 +48,33 @@ class _LandingPageState extends State<LandingPage> {
     final url = html.window.location.href;
     if (url.contains("access_token=")) {
       final fragment = Uri.parse(url).fragment;
-      final token = fragment
-          .split('&')
-          .firstWhere((e) => e.startsWith('access_token='))
-          .split('=')[1];
+      final params = Uri.splitQueryString(fragment);
 
-      // Nettoyer l’URL après récupération
+      final accessToken = params['access_token'];
+      final idToken = params['id_token'];
+
+      String? userEmail;
+
+      if (idToken != null) {
+        final parts = idToken.split('.');
+        final payload = base64Url.normalize(parts[1]);
+        final decoded = utf8.decode(base64Url.decode(payload));
+        final claims = json.decode(decoded);
+        userEmail = claims['emails']?[0] ?? claims['email'];
+      }
+
+      // Nettoyer l'URL après extraction
       html.window.history.replaceState(null, 'LED Controller', '/');
 
-      // Naviguer vers la page LED
+      // Naviguer vers la page LED avec email et token
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => LedControlPage(accessToken: token),
+            builder: (context) => LedControlPage(
+              accessToken: accessToken!,
+              userEmail: userEmail ?? 'Utilisateur inconnu',
+            ),
           ),
         );
       });
@@ -71,12 +84,14 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   Future<void> _authenticateAndNavigate() async {
+    final nonce = DateTime.now().millisecondsSinceEpoch.toString();
     final authUrl =
         'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
         '?client_id=$clientId'
-        '&response_type=token'
+        '&response_type=id_token token'
         '&redirect_uri=$redirectUri'
-        '&scope=openid'
+        '&scope=openid profile email'
+        '&nonce=$nonce'
         '&prompt=login';
 
     try {
@@ -84,7 +99,7 @@ class _LandingPageState extends State<LandingPage> {
         url: authUrl,
         callbackUrlScheme: "https",
       );
-      // ⚠️ La redirection se fait vers la même page → token traité à l'ouverture
+      // ⚠️ Redirection se fait vers index.html → traitée dans initState()
     } catch (e) {
       print("❌ Auth échouée : $e");
     }
@@ -112,7 +127,13 @@ class _LandingPageState extends State<LandingPage> {
 
 class LedControlPage extends StatelessWidget {
   final String accessToken;
-  const LedControlPage({super.key, required this.accessToken});
+  final String userEmail;
+
+  const LedControlPage({
+    super.key,
+    required this.accessToken,
+    required this.userEmail,
+  });
 
   Future<void> sendColor(String color) async {
     final url = Uri.parse(functionUrl);
@@ -146,7 +167,20 @@ class LedControlPage extends StatelessWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Contrôle LED')),
+      appBar: AppBar(
+        title: const Text('Contrôle LED'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: Center(
+              child: Text(
+                userEmail,
+                style: const TextStyle(fontSize: 14, color: Colors.white),
+              ),
+            ),
+          )
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
