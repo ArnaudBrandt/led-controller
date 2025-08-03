@@ -29,13 +29,18 @@ jobs:
       - name: Build Flutter Web with dart-define
         run: |
           flutter pub get
-          flutter build web --dart-define=FUNCTION_URL=${{ secrets.FUNCTION_URL }}
+          flutter build web \
+            --dart-define=FUNCTION_URL=${{ secrets.FUNCTION_URL }} \
+            --dart-define=B2C_CLIENT_ID=${{ secrets.B2C_CLIENT_ID }} \
+            --dart-define=B2C_TENANT_NAME=${{ secrets.B2C_TENANT_NAME }} \
+            --dart-define=B2C_POLICY=${{ secrets.B2C_POLICY }} \
+            --dart-define=B2C_REDIRECT_URI=${{ secrets.B2C_REDIRECT_URI }}
 
       - name: Deploy to Azure Static Web Apps
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103 }}
+          azure_static_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103 }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "."
@@ -51,5 +56,5 @@ jobs:
         id: closepullrequest
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103 }}
+          azure_static_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_GRASS_0665D3103 }}
           action: "close"
