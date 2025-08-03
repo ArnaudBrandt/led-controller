@@ -1,3 +1,4 @@
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -35,13 +36,38 @@ class LandingPage extends StatefulWidget {
 }
 
 class _LandingPageState extends State<LandingPage> {
-  bool _checkingSession = true;
+  bool _checkingRedirect = true;
 
   @override
   void initState() {
     super.initState();
-    // Ici tu peux ajouter un "silent login" si CIAM le supporte via iframe, sinon on reste ici
-    setState(() => _checkingSession = false);
+    _checkRedirectToken();
+  }
+
+  void _checkRedirectToken() {
+    final url = html.window.location.href;
+    if (url.contains("access_token=")) {
+      final fragment = Uri.parse(url).fragment;
+      final token = fragment
+          .split('&')
+          .firstWhere((e) => e.startsWith('access_token='))
+          .split('=')[1];
+
+      // Nettoyer l’URL après récupération
+      html.window.history.replaceState(null, 'LED Controller', '/');
+
+      // Naviguer vers la page LED
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LedControlPage(accessToken: token),
+          ),
+        );
+      });
+    } else {
+      setState(() => _checkingRedirect = false);
+    }
   }
 
   Future<void> _authenticateAndNavigate() async {
@@ -54,22 +80,11 @@ class _LandingPageState extends State<LandingPage> {
         '&prompt=login';
 
     try {
-      final result = await FlutterWebAuth2.authenticate(
+      await FlutterWebAuth2.authenticate(
         url: authUrl,
         callbackUrlScheme: "https",
       );
-
-      final token = Uri.parse(result).fragment
-          .split('&')
-          .firstWhere((e) => e.startsWith('access_token='))
-          .split('=')[1];
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LedControlPage(accessToken: token),
-        ),
-      );
+      // ⚠️ La redirection se fait vers la même page → token traité à l'ouverture
     } catch (e) {
       print("❌ Auth échouée : $e");
     }
@@ -77,7 +92,7 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_checkingSession) {
+    if (_checkingRedirect) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
