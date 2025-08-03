@@ -9,7 +9,7 @@ final clientId = const String.fromEnvironment('B2C_CLIENT_ID');
 final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
 
-//test final
+//test final bio
 
 
 void main() {
@@ -98,13 +98,12 @@ class _LandingPageState extends State<LandingPage> {
   Future<void> _authenticateAndNavigate() async {
     final nonce = DateTime.now().millisecondsSinceEpoch.toString();
     final authUrl =
-        'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
-        '?client_id=$clientId'
-        '&response_type=id_token token'
-        '&redirect_uri=$redirectUri'
-        '&scope=openid profile email'
-        '&nonce=$nonce'
-        '&prompt=login';
+    'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
+    '?client_id=$clientId'
+    '&response_type=id_token token'
+    '&redirect_uri=$redirectUri'
+    '&scope=openid profile email'
+    '&nonce=${DateTime.now().millisecondsSinceEpoch}';
 
     try {
       await FlutterWebAuth2.authenticate(
@@ -180,17 +179,31 @@ Widget build(BuildContext context) {
   return Scaffold(
     appBar: AppBar(
       title: const Text('Contrôle LED'),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 12.0),
-          child: Center(
-            child: Text(
-              userEmail,
-              style: const TextStyle(fontSize: 14, color: Colors.white),
-            ),
-          ),
-        )
-      ],
+actions: [
+  Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    child: Center(
+      child: Text(
+        userEmail,
+        style: const TextStyle(fontSize: 14, color: Colors.white),
+      ),
+    ),
+  ),
+  IconButton(
+    icon: const Icon(Icons.logout),
+    tooltip: 'Se déconnecter',
+    onPressed: () {
+      // Nettoyage du fragment et des données
+      html.window.localStorage.remove('auth_fragment');
+      html.window.location.hash = '';
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LandingPage()),
+        (route) => false,
+      );
+    },
+  ),
+],
     ),
     body: Padding(
       padding: const EdgeInsets.all(20),
