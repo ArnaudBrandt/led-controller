@@ -9,6 +9,9 @@ final clientId = const String.fromEnvironment('B2C_CLIENT_ID');
 final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
 
+//test final
+
+
 void main() {
   if (functionUrl.isEmpty) {
     throw Exception("FUNCTION_URL n'est pas défini.");
