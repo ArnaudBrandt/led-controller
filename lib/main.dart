@@ -46,7 +46,7 @@ class _LandingPageState extends State<LandingPage> {
 
   Future<void> _authenticateAndNavigate() async {
     final authUrl =
-        'https://$tenantName.ciamlogin.com/$tenantName/oauth2/v2.0/authorize'
+        'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
         '?client_id=$clientId'
         '&response_type=token'
         '&redirect_uri=$redirectUri'
