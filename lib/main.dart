@@ -45,10 +45,15 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _checkRedirectToken() {
-    final url = html.window.location.href;
-    if (url.contains("access_token=")) {
-      final fragment = Uri.parse(url).fragment;
-      final params = Uri.splitQueryString(fragment);
+    final fragment = html.window.location.hash;
+    print("🔍 URL Fragment (hash): $fragment");
+
+    // Fallback si hash perdu, essaie de lire dans localStorage
+    final fallbackFragment = html.window.localStorage['auth_fragment'];
+    final rawFragment = (fragment.isNotEmpty) ? fragment.substring(1) : fallbackFragment;
+
+    if (rawFragment != null && rawFragment.contains("access_token=")) {
+      final params = Uri.splitQueryString(rawFragment);
 
       final accessToken = params['access_token'];
       final idToken = params['id_token'];
@@ -56,23 +61,27 @@ class _LandingPageState extends State<LandingPage> {
       String? userEmail;
 
       if (idToken != null) {
-        final parts = idToken.split('.');
-        final payload = base64Url.normalize(parts[1]);
-        final decoded = utf8.decode(base64Url.decode(payload));
-        final claims = json.decode(decoded);
-        userEmail = claims['emails']?[0] ?? claims['email'];
+        try {
+          final parts = idToken.split('.');
+          final payload = base64Url.normalize(parts[1]);
+          final decoded = utf8.decode(base64Url.decode(payload));
+          final claims = json.decode(decoded);
+          userEmail = claims['emails']?[0] ?? claims['email'];
+        } catch (e) {
+          print('❌ Erreur lors du décodage du token : $e');
+        }
       }
 
-      // Nettoyer l'URL après extraction
+      // Nettoyage
+      html.window.localStorage.remove('auth_fragment');
       html.window.history.replaceState(null, 'LED Controller', '/');
 
-      // Naviguer vers la page LED avec email et token
       WidgetsBinding.instance.addPostFrameCallback((_) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => LedControlPage(
-              accessToken: accessToken!,
+              accessToken: accessToken ?? '',
               userEmail: userEmail ?? 'Utilisateur inconnu',
             ),
           ),
@@ -97,9 +106,8 @@ class _LandingPageState extends State<LandingPage> {
     try {
       await FlutterWebAuth2.authenticate(
         url: authUrl,
-        callbackUrlScheme: "https",
+        callbackUrlScheme: redirectUri.startsWith("https") ? "https" : "http",
       );
-      // ⚠️ Redirection se fait vers index.html → traitée dans initState()
     } catch (e) {
       print("❌ Auth échouée : $e");
     }
