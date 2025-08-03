@@ -8,6 +8,8 @@ final clientId = const String.fromEnvironment('B2C_CLIENT_ID');
 final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
 
+// update tenant 
+
 String? accessToken;
 
 void main() {
