@@ -6,12 +6,7 @@ import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 final functionUrl = const String.fromEnvironment('FUNCTION_URL');
 final clientId = const String.fromEnvironment('B2C_CLIENT_ID');
 final tenantName = const String.fromEnvironment('B2C_TENANT_NAME');
-final policy = const String.fromEnvironment('B2C_POLICY');
 final redirectUri = const String.fromEnvironment('B2C_REDIRECT_URI');
-
-
-// modif avec token corrigé
-
 
 String? accessToken;
 
@@ -39,12 +34,12 @@ class HomePage extends StatelessWidget {
 
   Future<void> authenticateWithMicrosoft() async {
     final authUrl =
-        'https://$tenantName.b2clogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
-        '?p=$policy'
-        '&client_id=$clientId'
+        'https://$tenantName.ciamlogin.com/$tenantName.onmicrosoft.com/oauth2/v2.0/authorize'
+        '?client_id=$clientId'
         '&response_type=token'
         '&redirect_uri=$redirectUri'
-        '&scope=openid';
+        '&scope=openid'
+        '&prompt=login';
 
     final result = await FlutterWebAuth2.authenticate(
       url: authUrl,
