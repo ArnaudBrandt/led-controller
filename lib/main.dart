@@ -22,29 +22,29 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LED Controller',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: const AuthenticatedHomePage(),
+      home: const LandingPage(),
     );
   }
 }
 
-class AuthenticatedHomePage extends StatefulWidget {
-  const AuthenticatedHomePage({super.key});
+class LandingPage extends StatefulWidget {
+  const LandingPage({super.key});
 
   @override
-  State<AuthenticatedHomePage> createState() => _AuthenticatedHomePageState();
+  State<LandingPage> createState() => _LandingPageState();
 }
 
-class _AuthenticatedHomePageState extends State<AuthenticatedHomePage> {
-  String? accessToken;
-  bool isLoading = true;
+class _LandingPageState extends State<LandingPage> {
+  bool _checkingSession = true;
 
   @override
   void initState() {
     super.initState();
-    _authenticateWithMicrosoft();
+    // Ici tu peux ajouter un "silent login" si CIAM le supporte via iframe, sinon on reste ici
+    setState(() => _checkingSession = false);
   }
 
-  Future<void> _authenticateWithMicrosoft() async {
+  Future<void> _authenticateAndNavigate() async {
     final authUrl =
         'https://$tenantName.ciamlogin.com/$tenantName/oauth2/v2.0/authorize'
         '?client_id=$clientId'
@@ -64,24 +64,47 @@ class _AuthenticatedHomePageState extends State<AuthenticatedHomePage> {
           .firstWhere((e) => e.startsWith('access_token='))
           .split('=')[1];
 
-      setState(() {
-        accessToken = token;
-        isLoading = false;
-      });
-
-      print("🔐 Token récupéré : $accessToken");
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LedControlPage(accessToken: token),
+        ),
+      );
     } catch (e) {
-      print("❌ Auth erreur : $e");
-      // tu pourrais ici afficher une erreur ou rediriger
+      print("❌ Auth échouée : $e");
     }
   }
 
-  Future<void> _sendColor(String color) async {
+  @override
+  Widget build(BuildContext context) {
+    if (_checkingSession) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('LED Controller')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: _authenticateAndNavigate,
+          child: const Text("Connexion Microsoft"),
+        ),
+      ),
+    );
+  }
+}
+
+class LedControlPage extends StatelessWidget {
+  final String accessToken;
+  const LedControlPage({super.key, required this.accessToken});
+
+  Future<void> sendColor(String color) async {
     final url = Uri.parse(functionUrl);
     try {
       final headers = {
         'Content-Type': 'application/json',
-        if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+        'Authorization': 'Bearer $accessToken',
       };
       final response = await http.post(
         url,
@@ -99,14 +122,6 @@ class _AuthenticatedHomePageState extends State<AuthenticatedHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading || accessToken == null) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     final colors = {
       'red': Colors.red,
       'green': Colors.green,
@@ -128,7 +143,7 @@ class _AuthenticatedHomePageState extends State<AuthenticatedHomePage> {
                   backgroundColor: entry.value,
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: () => _sendColor(entry.key),
+                onPressed: () => sendColor(entry.key),
                 child: Text(
                   entry.key.toUpperCase(),
                   style: const TextStyle(color: Colors.white, fontSize: 18),
