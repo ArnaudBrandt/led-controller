@@ -167,35 +167,46 @@ class LedControlPage extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = {
-      'red': Colors.red,
-      'green': Colors.green,
-      'blue': Colors.blue,
-      'rainbow': Colors.purple,
-      'off': Colors.grey,
-    };
+@override
+Widget build(BuildContext context) {
+  final colors = {
+    'red': Colors.red,
+    'green': Colors.green,
+    'blue': Colors.blue,
+    'rainbow': Colors.purple,
+    'off': Colors.grey,
+  };
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Contrôle LED'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: Center(
-              child: Text(
-                userEmail,
-                style: const TextStyle(fontSize: 14, color: Colors.white),
-              ),
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Contrôle LED'),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 12.0),
+          child: Center(
+            child: Text(
+              userEmail,
+              style: const TextStyle(fontSize: 14, color: Colors.white),
             ),
-          )
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: colors.entries.map((entry) {
+          ),
+        )
+      ],
+    ),
+    body: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Connecté en tant que : $userEmail',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ...colors.entries.map((entry) {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: ElevatedButton(
@@ -211,8 +222,9 @@ class LedControlPage extends StatelessWidget {
               ),
             );
           }).toList(),
-        ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
